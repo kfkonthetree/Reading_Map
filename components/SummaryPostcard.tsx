@@ -1,0 +1,141 @@
+import React, { useRef } from 'react';
+import { Download, X, Map, Quote } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { JourneyData } from '../types';
+
+interface SummaryPostcardProps {
+  data: JourneyData;
+  onClose: () => void;
+}
+
+const SummaryPostcard: React.FC<SummaryPostcardProps> = ({ data, onClose }) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2, // High resolution
+        backgroundColor: '#f2f0e9', // Ensure background color
+        useCORS: true
+      });
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = 'reading-map-2025.png';
+      link.href = url;
+      link.click();
+    } catch (err) {
+      console.error("Download failed", err);
+    }
+  };
+
+  const totalBooks = data.books.length;
+  const domesticCount = data.books.filter(b => b.location.isDomestic).length;
+  const foreignCount = totalBooks - domesticCount;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-500 overflow-y-auto">
+      <div className="relative w-full max-w-sm md:max-w-4xl flex flex-col items-center my-auto">
+        
+        {/* Actions */}
+        <div className="absolute -top-12 right-0 flex gap-4">
+          <button onClick={onClose} className="p-2 text-white/80 hover:text-white transition-colors bg-white/10 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* The Postcard DOM - Responsive: Vertical for Mobile, Horizontal for Desktop */}
+        <div 
+          ref={cardRef}
+          className="bg-[#f2f0e9] w-full shadow-2xl relative overflow-hidden text-biblio-green flex flex-col md:flex-row aspect-[9/16] md:aspect-[2/1] rounded-sm"
+          style={{ backgroundImage: 'radial-gradient(#d6d3c9 1px, transparent 0)', backgroundSize: '20px 20px' }}
+        >
+           {/* Stamp Decoration */}
+           <div className="absolute top-4 right-4 md:top-6 md:right-6 w-16 h-16 md:w-24 md:h-24 border-2 border-biblio-green/20 rounded-full flex items-center justify-center transform rotate-12 opacity-60 z-10">
+             <div className="text-[8px] md:text-[10px] uppercase tracking-widest text-center font-bold">
+               Reading<br/>Map<br/>2025
+             </div>
+           </div>
+
+           {/* Part 1: Stats (Top on Mobile, Left on Desktop) */}
+           <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-biblio-green/10 p-6 md:p-8 flex flex-row md:flex-col justify-between items-center md:items-start bg-white/30 gap-4">
+              <div className="flex items-center gap-2 mb-0 md:mb-6">
+                 <div className="bg-biblio-green text-white p-1 rounded-sm">
+                    <Map className="w-4 h-4 md:w-5 md:h-5" />
+                 </div>
+                 <span className="font-serif font-bold text-lg md:text-xl tracking-tight">reading.map</span>
+              </div>
+              
+              <div className="flex flex-row md:flex-col gap-6 md:gap-8 text-center md:text-left">
+                <div>
+                  <div className="text-3xl md:text-4xl font-serif font-bold leading-none mb-1">{totalBooks}</div>
+                  <div className="text-[10px] md:text-xs uppercase tracking-widest opacity-60">Books Read</div>
+                </div>
+                <div className="hidden md:block">
+                   <div className="h-px w-8 bg-biblio-green/20 mb-6"></div>
+                </div>
+                <div>
+                  <div className="text-3xl md:text-4xl font-serif font-bold leading-none mb-1">{data.totalDistance?.toLocaleString() || '0'}</div>
+                  <div className="text-[10px] md:text-xs uppercase tracking-widest opacity-60">KM Traveled</div>
+                </div>
+              </div>
+
+              {/* Mobile Only Extra Stats Row */}
+              <div className="flex md:hidden flex-col text-[10px] opacity-60 font-mono text-right">
+                 <div>{domesticCount} DOMESTIC</div>
+                 <div>{foreignCount} WORLDWIDE</div>
+              </div>
+
+              {/* Desktop Only Extra Stats */}
+              <div className="hidden md:grid grid-cols-2 gap-4 w-full">
+                 <div>
+                   <div className="text-xl font-bold">{domesticCount}</div>
+                   <div className="text-[10px] uppercase opacity-60">Domestic</div>
+                 </div>
+                 <div>
+                   <div className="text-xl font-bold">{foreignCount}</div>
+                   <div className="text-[10px] uppercase opacity-60">World</div>
+                 </div>
+              </div>
+
+              <div className="hidden md:block text-[10px] opacity-40 font-mono mt-auto">
+                GENERATED BY READING.MAP<br/>
+                {new Date().toLocaleDateString()}
+              </div>
+           </div>
+
+           {/* Part 2: Message (Bottom on Mobile, Right on Desktop) */}
+           <div className="flex-1 p-8 md:p-12 flex flex-col justify-center relative">
+              <Quote className="absolute top-6 left-6 md:top-8 md:left-8 text-biblio-green/5 w-16 h-16 md:w-24 md:h-24" />
+              
+              <div className="relative z-10 flex flex-col h-full justify-center">
+                <h3 className="font-serif text-xl md:text-2xl mb-4 md:mb-6 font-bold">2025 年度阅读之旅</h3>
+                <p className="font-serif text-base md:text-lg leading-relaxed text-biblio-green/90 whitespace-pre-wrap flex-grow">
+                  {data.summaryComment}
+                </p>
+                <div className="mt-8 pt-6 border-t border-biblio-green/10 text-right font-bold tracking-widest opacity-80 text-xs md:text-sm">
+                  —— 您的精神足迹
+                </div>
+              </div>
+
+              {/* Mobile Footer Date */}
+              <div className="md:hidden absolute bottom-2 left-0 w-full text-center text-[8px] opacity-30 font-mono">
+                 GENERATED BY READING.MAP • {new Date().toLocaleDateString()}
+              </div>
+           </div>
+        </div>
+
+        {/* Download Button */}
+        <button 
+          onClick={handleDownload}
+          className="mt-6 md:mt-8 bg-white text-biblio-green px-6 py-3 md:px-8 md:py-3 font-bold uppercase tracking-widest hover:bg-biblio-accent transition-colors shadow-lg flex items-center gap-2 rounded-sm text-sm md:text-base"
+        >
+          <Download size={18} /> 保存图片
+        </button>
+
+      </div>
+    </div>
+  );
+};
+
+export default SummaryPostcard;
